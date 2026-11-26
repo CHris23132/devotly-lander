@@ -22,7 +22,7 @@ export default function PrivacyPage() {
               Devotly Privacy Policy
             </h1>
             <p className="mt-4 text-sm font-semibold text-[var(--dev-muted)]">
-              Last updated: November 25, 2026 · Devotly is operated by Play 3D Inc. ·{" "}
+              Last updated: November 25, 2026 ·{" "}
               <a href="https://devotly.app" className="text-[var(--dev-accent)] hover:underline">
                 devotly.app
               </a>
