@@ -144,6 +144,48 @@ header > .shell {
   line-height: 1.6;
 }
 
+.privacy-prose h2 {
+  margin: 0;
+  color: var(--dev-ink);
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.privacy-prose h3 {
+  margin: 0.75rem 0 0;
+  color: var(--dev-ink);
+  font-size: 1.05rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.privacy-prose ul {
+  margin: 0;
+  padding-left: 1.15rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.privacy-prose li {
+  padding-left: 0.15rem;
+}
+
+.privacy-prose strong {
+  color: var(--dev-ink);
+  font-weight: 700;
+}
+
+.privacy-prose em {
+  font-style: normal;
+  color: var(--dev-ink);
+  font-weight: 600;
+}
+
+.privacy-prose a {
+  font-weight: 650;
+}
+
 /* High-end SaaS hero — neo-brutalist blue */
 .hero-saas {
   background:
