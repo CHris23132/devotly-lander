@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: devotly
+      POSTGRES_PASSWORD: devotly
+      POSTGRES_DB: devotly
+    volumes:
+      - devotly_pg:/var/lib/postgresql/data
+
+volumes:
+  devotly_pg:

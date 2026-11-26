@@ -1,0 +1,448 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Industry {
+  restaurant
+  salon
+  med_spa
+  golf_entertainment
+  retail
+  services
+  other
+}
+
+enum SubscriptionStatus {
+  none
+  trialling
+  active
+  past_due
+  canceled
+  unpaid
+}
+
+enum ConsentType {
+  express
+  implied_purchase
+  none
+}
+
+enum CatalogSource {
+  website_import
+  manual
+}
+
+enum OfferType {
+  percent_off
+  amount_off
+  free_item
+  buy_x_get_y
+  two_person_deal
+  custom
+}
+
+enum OfferStatus {
+  draft
+  active
+  paused
+  expired
+}
+
+enum CouponStatus {
+  issued
+  redeemed
+  expired
+  voided
+}
+
+enum CampaignType {
+  first_send
+  monthly
+  blast
+  expiry_reminder
+  referral
+}
+
+enum MessageChannel {
+  sms
+  email
+}
+
+enum MessageStatus {
+  queued
+  sent
+  delivered
+  failed
+  dry_run
+  suppressed
+}
+
+enum SuppressionReason {
+  stop
+  unsubscribe
+  bounce
+  invalid
+  spam_report
+}
+
+enum ReferralStatus {
+  sent
+  claimed
+  converted
+  rewarded
+}
+
+enum RedemptionResult {
+  valid
+  redeemed
+  already_redeemed
+  expired
+  void
+  wrong_business
+}
+
+enum ImportJobStatus {
+  queued
+  running
+  completed
+  failed
+}
+
+enum PhysicalBookStatus {
+  requested
+  quoted
+  approved
+  in_production
+  shipped
+  canceled
+}
+
+enum BusinessRole {
+  owner
+  staff
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships      BusinessMember[]
+  sessions         Session[]
+  redemptions      RedemptionEvent[]
+  redeemedCoupons  Coupon[]          @relation("RedeemedBy")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Business {
+  id                   String             @id @default(cuid())
+  name                 String
+  slug                 String             @unique
+  industry             Industry           @default(other)
+  address              String?
+  phone                String?
+  websiteUrl           String?
+  timezone             String             @default("America/Toronto")
+  logoUrl              String?
+  brandColor           String             @default("#C6F432")
+  subscriptionStatus   SubscriptionStatus @default(none)
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  physicalBookEnabled  Boolean            @default(false)
+  referralRewardOfferId String?
+  referralTrigger      String             @default("redemption")
+  monthlySmsCap        Int                @default(3)
+  quietHoursStart      Int                @default(9)
+  quietHoursEnd        Int                @default(20)
+  expiryReminderOn     Boolean            @default(true)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  members              BusinessMember[]
+  customers            Customer[]
+  catalogItems         CatalogItem[]
+  offers               Offer[]
+  coupons              Coupon[]
+  campaigns            Campaign[]
+  messageLogs          MessageLog[]
+  suppressions         Suppression[]
+  referrals            Referral[]
+  redemptionEvents     RedemptionEvent[]
+  importJobs           ImportJob[]
+  physicalBookRequests PhysicalBookRequest[]
+  consentAttestations  ConsentAttestation[]
+}
+
+model BusinessMember {
+  id         String       @id @default(cuid())
+  businessId String
+  userId     String
+  role       BusinessRole @default(owner)
+  createdAt  DateTime     @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, userId])
+  @@index([userId])
+}
+
+model Customer {
+  id                 String      @id @default(cuid())
+  businessId         String
+  firstName          String?
+  lastName           String?
+  phone              String
+  email              String?
+  lastPurchaseAt     DateTime?
+  totalSpentCents    Int?
+  tags               String[]    @default([])
+  consentType        ConsentType @default(none)
+  consentSource      String?
+  consentExpiresAt   DateTime?
+  consentCopyVersion String?
+  consentIp          String?
+  consentedAt        DateTime?
+  optedOutAt         DateTime?
+  personalBookTokenHash String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  business  Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  coupons   Coupon[]
+  messages  MessageLog[]
+  referrals Referral[] @relation("Referrer")
+  referred  Referral[] @relation("Friend")
+
+  @@unique([businessId, phone])
+  @@index([businessId, consentType])
+  @@index([businessId, optedOutAt])
+}
+
+model ConsentAttestation {
+  id         String   @id @default(cuid())
+  businessId String
+  userId     String
+  fileName   String
+  attestedAt DateTime @default(now())
+  statement  String
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+}
+
+model CatalogItem {
+  id          String        @id @default(cuid())
+  businessId  String
+  source      CatalogSource @default(manual)
+  name        String
+  description String?
+  priceCents  Int?
+  imageUrl    String?
+  sourceUrl   String?
+  active      Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  offers   Offer[]
+
+  @@index([businessId])
+}
+
+model Offer {
+  id               String      @id @default(cuid())
+  businessId       String
+  catalogItemId    String?
+  type             OfferType   @default(custom)
+  title            String
+  terms            String?
+  percentOff       Int?
+  amountOffCents   Int?
+  buyX             Int?
+  getY             Int?
+  valueLabel       String?
+  startsAt         DateTime?
+  expiresAt        DateTime?
+  perCustomerLimit Int         @default(1)
+  status           OfferStatus @default(draft)
+  isReferralReward Boolean     @default(false)
+  imageUrl         String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  business    Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  catalogItem CatalogItem? @relation(fields: [catalogItemId], references: [id])
+  coupons     Coupon[]
+
+  @@index([businessId, status])
+}
+
+model Coupon {
+  id                String       @id @default(cuid())
+  businessId        String
+  offerId           String
+  customerId        String
+  code              String       @unique
+  qrTokenHash       String       @unique
+  status            CouponStatus @default(issued)
+  issuedAt          DateTime     @default(now())
+  redeemedAt        DateTime?
+  redeemedByUserId  String?
+  applePassId       String?
+  googlePassId      String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  business   Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  offer      Offer             @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  customer   Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  redeemedBy User?             @relation("RedeemedBy", fields: [redeemedByUserId], references: [id])
+  events     RedemptionEvent[]
+
+  @@index([customerId, offerId, status])
+  @@index([businessId, status])
+  @@index([code])
+}
+
+model Campaign {
+  id             String       @id @default(cuid())
+  businessId     String
+  type           CampaignType
+  scheduledAt    DateTime?
+  sentAt         DateTime?
+  templateSms    String?
+  templateEmail  String?
+  recipientCount Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  business Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  messages MessageLog[]
+
+  @@index([businessId, type])
+}
+
+model MessageLog {
+  id                String         @id @default(cuid())
+  businessId        String
+  customerId        String
+  campaignId        String?
+  channel           MessageChannel
+  provider          String
+  providerMessageId String?
+  status            MessageStatus  @default(queued)
+  uniqueKey         String
+  bodySnapshot      String
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  campaign Campaign? @relation(fields: [campaignId], references: [id])
+
+  @@unique([uniqueKey])
+  @@index([businessId, createdAt])
+}
+
+model Suppression {
+  id         String            @id @default(cuid())
+  businessId String?
+  phone      String?
+  email      String?
+  reason     SuppressionReason
+  createdAt  DateTime          @default(now())
+
+  business Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, phone])
+  @@index([businessId, email])
+}
+
+model Referral {
+  id                 String         @id @default(cuid())
+  businessId         String
+  referrerCustomerId String
+  friendName         String?
+  friendPhone        String
+  friendCustomerId   String?
+  status             ReferralStatus @default(sent)
+  rewardCouponIds    String[]       @default([])
+  convertedAt        DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  referrer Customer  @relation("Referrer", fields: [referrerCustomerId], references: [id], onDelete: Cascade)
+  friend   Customer? @relation("Friend", fields: [friendCustomerId], references: [id])
+
+  @@index([businessId, friendPhone])
+  @@index([referrerCustomerId])
+}
+
+model RedemptionEvent {
+  id          String           @id @default(cuid())
+  businessId  String
+  couponId    String
+  staffUserId String?
+  result      RedemptionResult
+  createdAt   DateTime         @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  coupon   Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  staff    User?    @relation(fields: [staffUserId], references: [id])
+
+  @@index([businessId, createdAt])
+}
+
+model ImportJob {
+  id           String          @id @default(cuid())
+  businessId   String
+  sourceUrl    String
+  status       ImportJobStatus @default(queued)
+  pagesCrawled Int             @default(0)
+  itemsFound   Int             @default(0)
+  error        String?
+  rawResult    Json?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+}
+
+model PhysicalBookRequest {
+  id          String              @id @default(cuid())
+  businessId  String
+  quantity    Int
+  notes       String?
+  status      PhysicalBookStatus  @default(requested)
+  quotedCents Int?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+}
