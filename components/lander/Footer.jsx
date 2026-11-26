@@ -59,7 +59,7 @@ export default function Footer() {
             </li>
             <li>
               <a className="text-[var(--dev-muted)] hover:text-[var(--dev-ink)]" href="/privacy">
-                Privacy
+                Privacy Policy
               </a>
             </li>
           </ul>

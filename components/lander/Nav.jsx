@@ -67,9 +67,6 @@ export default function Nav() {
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
-          <a href="/coupon-book" className="text-[13px] font-semibold text-[var(--dev-muted)] hover:text-[var(--dev-ink)]">
-            Coupon Book
-          </a>
           <a href="#get-started" className="btn btn-primary btn-shopify px-4">
             Install on Shopify
             <span aria-hidden="true">→</span>
@@ -107,9 +104,6 @@ export default function Nav() {
                 {link.label}
               </a>
             ))}
-            <a href="/coupon-book" onClick={() => setOpen(false)} className="border-b border-[var(--dev-line)] py-3 text-base font-semibold">
-              Coupon Book
-            </a>
             <a href="#get-started" onClick={() => setOpen(false)} className="btn btn-primary btn-shopify mt-4">
               Install on Shopify
               <span aria-hidden="true">→</span>

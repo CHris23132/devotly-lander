@@ -12,8 +12,8 @@ const FOUNDERS = [
     name: "Duncan Hui",
     role: "Co-Founder & CEO",
     image: "/dh2.png",
-    phone: "+1 (647) 548-9735",
-    phoneHref: "tel:+16475489735",
+    phone: "+1 (647) 548-9736",
+    phoneHref: "tel:+16475489736",
     alt: "Duncan Hui, Co-Founder and CEO of Devotly",
   },
   {
